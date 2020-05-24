@@ -29,8 +29,13 @@ plugins:
 babel_js_extensions: 'es6'
 
 exclude: ['README.md', 'Gemfile*', '*.sh', 'geninfo/', '*.py', '*.tar.gz', 
-          'Dockerfile.*']
+          'Dockerfile.*', 'vendor']
 
+rss:
+    title: 重庆大学开源软件镜像站新闻公告
+    description:  
+    limit: 8
+    path: news_rss.xml
 # Content Related
 new_mirrors:
 # vim: ts=2 sts=2 sw=2 expandtab
