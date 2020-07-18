@@ -1,5 +1,9 @@
 [
   {
+    "name": "aosc",
+    "desc": "安同官方镜像以及软件包，软件包tarball，等"
+  },
+  {
     "name": "AOSP",
     "desc": "Android 操作系统源代码"
   },

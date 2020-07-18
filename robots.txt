@@ -1,6 +1,7 @@
 # robots.txt for https://mirrors.cqu.edu.cn
 User-agent: *
 
+Disallow: /aosc
 Disallow: /CPAN
 Disallow: /CTAN
 Disallow: /archlinux
