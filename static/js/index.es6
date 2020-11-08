@@ -59,15 +59,6 @@ var mir_tmpl = $("#template").text(),
 		'homebrew': {
 			'url': "/help/homebrew/"
 		},
-		'linux.git': {
-			'url': "/help/linux.git/"
-		},
-		'linux-stable.git': {
-			'url': "/help/linux-stable.git/"
-		},
-		'git-repo': {
-			'url': "/help/git-repo/"
-		}
 	},
 	descriptions = {
 		{% for mir in site.data.mirror_desc %} '{{mir.name}}': '{{mir.desc}}' {% if forloop.index < forloop.length %},{% endif %}{% endfor %}
