@@ -6,6 +6,7 @@ import re
 import glob
 import json
 import logging
+import collections
 from urllib.parse import urljoin
 from distutils.version import LooseVersion
 from configparser import ConfigParser
@@ -29,6 +30,18 @@ def renderTemplate(template, result):
     for i in range(group_count):
         template = template.replace("$%d" % i, result.group(i) or "")
     return template
+
+
+def getSortKeys(template, result):
+    keys = []
+    for i in template.split(' '):
+        if not i:
+            continue
+        if i[0] != '$':
+            keys.append(i)
+        else:
+            keys.append(result.group(int(i[1:])) or "")
+    return keys
 
 
 def parseSection(items):
@@ -66,6 +79,13 @@ def parseSection(items):
 
             for prop in ("version", "type", "platform", "category"):
                 imageinfo[prop] = renderTemplate(items.get(prop, ""), result)
+            if 'version' not in imageinfo:
+                imageinfo['version'] = '0.0'
+            sort_by = items.get("sort_by", "")
+            if not(sort_by):
+                imageinfo['sort_key'] = (imageinfo['version'], imageinfo['platform'], imageinfo['type'])
+            else:
+                imageinfo['sort_key'] = getSortKeys(sort_by, result)
 
             logger.debug("[JSON] %r", imageinfo)
             key = renderTemplate(items.get("key_by", ""), result)
@@ -74,10 +94,11 @@ def parseSection(items):
             images[key].append(imageinfo)
 
     for image_group in images.values():
-        image_group.sort(key=lambda k: (LooseVersion(k['version']),
-                                        getPlatformPriority(k['platform']),
-                                        k['type']),
-                         reverse=True)
+        if 'nosort' not in items:
+            image_group.sort(key=lambda k: (LooseVersion(k['version']),
+                                            getPlatformPriority(k['platform']),
+                                            k['type']),
+                             reverse=True)
 
         i = 0
         versions = set()
@@ -96,7 +117,7 @@ def getDetail(image_info, urlbase):
             image_info['version'],
             image_info['platform'],
             ", %s" % image_info['type'] if image_info['type'] else ''
-    )
+    ) if image_info['platform'] != "" else image_info['version']
 
     category = image_info.get('category', 'os') or "os"
     return (desc, url, category)
@@ -134,17 +155,18 @@ def getImageList():
     oldcwd = os.getcwd()
     os.chdir(root)
 
-    url_dict = {}
+    img_dict = collections.defaultdict(list)
     for section in ini.sections():
         if section == "%main%":
             continue
         for image in parseSection(ini.items(section)):
-            if not image['distro'] in url_dict:
-                url_dict[image['distro']] = []
+            img_dict[image['distro']].append(image)
 
-            url_dict[image['distro']].append(
-                    getDetail(image, urlbase)
-            )
+    url_dict = {}
+    for distro, images in img_dict.items():
+        images.sort(key=lambda x: x['sort_key'])
+        logger.debug("[IMAGES] %r %r", distro, images)
+        url_dict[distro] = [getDetail(image, urlbase) for image in images]
 
     os.chdir(oldcwd)
 
@@ -153,5 +175,5 @@ def getImageList():
 
 if __name__ == "__main__":
     import sys
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
     print(getImageList())
