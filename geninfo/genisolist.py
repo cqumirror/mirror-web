@@ -18,11 +18,11 @@ CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'genisolist.ini')
 def getPlatformPriority(platform):
     platform = platform.lower()
     if platform in ['amd64', 'x86_64', '64bit']:
-        return 100
+        return b'\x00'
     elif platform in ['i386', 'i486', 'i586', 'i686', 'x86', '32bit']:
-        return 90
+        return b'\x01'
     else:
-        return 0
+        return platform.encode()
 
 
 def renderTemplate(template, result):
@@ -83,7 +83,9 @@ def parseSection(items):
                 imageinfo['version'] = '0.0'
             sort_by = items.get("sort_by", "")
             if not(sort_by):
-                imageinfo['sort_key'] = (imageinfo['version'], imageinfo['platform'], imageinfo['type'])
+                imageinfo['sort_key'] = (imageinfo['version'],
+                        getPlatformPriority(imageinfo['platform']),
+                        getPlatformPriority(imageinfo['type']))
             else:
                 imageinfo['sort_key'] = getSortKeys(sort_by, result)
 
@@ -94,12 +96,6 @@ def parseSection(items):
             images[key].append(imageinfo)
 
     for image_group in images.values():
-        if 'nosort' not in items:
-            image_group.sort(key=lambda k: (LooseVersion(k['version']),
-                                            getPlatformPriority(k['platform']),
-                                            k['type']),
-                             reverse=True)
-
         i = 0
         versions = set()
         listvers = int(items.get('listvers', 0xFF))
